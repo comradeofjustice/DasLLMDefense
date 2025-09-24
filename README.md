@@ -1,6 +1,5 @@
-# AutoDefense: Multi-Agent LLM Defense against Jailbreak Attacks
-
-[**Blog**](https://microsoft.github.io/autogen/blog/2024/03/11/AutoDefense/Defending%20LLMs%20Against%20Jailbreak%20Attacks%20with%20AutoDefense/)
+# DasLLMDefense
+DasLLMDenfense Based on MutiAgent protection and the the customlized Fine-tuned LLM
 
 ## Installation
 
@@ -73,3 +72,5 @@ python evaluator/evaluate_safe.py
 
 This will find all output folders in `data/defense_output` that contain the keyword `-safe` and evaluate the false positive rate(FPR).
 The FPR will be saved in the `data/defense_output/defense_fp.csv` file.
+# DasLLMDefense
+DasLLMDenfense Based on MutiAgent protection and the the customlized Fine-tuned LLM
