@@ -4,11 +4,16 @@ from joblib import Parallel, delayed
 import pandas as pd
 from glob import glob
 from tqdm import tqdm
+import sys
+import datetime
+import io
+# 将项目根目录添加到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from defense.explicit_detector.agency.explicit_1_agent import (VanillaJailbreakDetector, CoT, CoTV2, CoTV3,
                                                                VanillaJailbreakDetectorV0125)
 from defense.explicit_detector.agency.explicit_2_agents import AutoGenDetectorV1, AutoGenDetectorV0125
 from defense.explicit_detector.agency.explicit_3_agents import AutoGenDetectorThreeAgency, AutoGenDetectorThreeAgencyV2
-from defense.explicit_detector.agency.explicit_5_agents import DetectorFiveAgency
+# from defense.explicit_detector.agency.explicit_5_agents import DetectorFiveAgency
 from defense.explicit_detector.explicit_defense_arch import ExplicitMultiAgentDefense
 # from defense.implicit_detector.agency.implicit_1_agent import MoralAdvisor
 # from defense.implicit_detector.agency.implicit_2_agents import MoralAdvisor2Agent
@@ -16,6 +21,7 @@ from defense.explicit_detector.explicit_defense_arch import ExplicitMultiAgentDe
 # from defense.implicit_detector.implicit_defense_arch import ImplicitMultiAgentDefense
 from evaluator.evaluate_helper import evaluate_defense_with_output_list, evaluate_defense_with_response
 import argparse
+
 
 defense_strategies = [
     # {"name": "im-1", "defense_agency": ImplicitMultiAgentDefense, "task_agency": MoralAdvisor},
@@ -49,8 +55,8 @@ def eval_csv_from_yuan():
 
 
 def eval_defense_strategies(llm_name, output_suffix, ignore_existing=True,
-                            chat_file="data/harmful_output/attack_gpt3.5_1106.json",
-                            host_name="127.0.0.1", port_range=(9005, 9005),
+                            chat_file="data/harmful_output/gpt-3.5-turbo/attack-dan_0.json",
+                            host_name="127.0.0.1", port_range=(9005, 9007),
                             frequency_penalty=1.3, num_of_threads=6, temperature=0.7, presence_penalty=0.0):
     defense_output_prefix = join(f"data/defense_output/open-llm-defense{output_suffix}", llm_name)
     os.makedirs(defense_output_prefix, exist_ok=True)
@@ -106,29 +112,76 @@ def eval_with_openai(model_list, chat_file, ignore_existing=True, output_suffix=
                                     num_of_threads=2, temperature=temperature)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model_list", nargs="*", default=["gpt-3.5-turbo-1106"])
-    parser.add_argument("--chat_file", type=str, default="data/harmful_output/attack_gpt3.5_1106.json")
-    parser.add_argument("--port_start", type=int, default=9005)
-    parser.add_argument("--host_name", nargs="*", default=["127.0.0.1"])
-    parser.add_argument("--num_of_instance", type=int, default=1)
-    parser.add_argument("--output_suffix", type=str, default="")
-    parser.add_argument("--frequency_penalty", type=float, default=0.0)
-    parser.add_argument("--presence_penalty", type=float, default=0.0)
-    parser.add_argument("--temperature", type=float, default=0.7)
-    parser.add_argument("--eval_harm", action="store_true")
-    parser.add_argument("--eval_safe", action="store_true")
-    args = parser.parse_args()
+def main():
+    # 创建日志目录
+    log_dir = "/data/CSY/autodefense/AutoDefense/data/defense_output/Log"
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # 生成以当前时间命名的日志文件名
+    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file_path = join(log_dir, f"run_defense_exp_{current_time}.log")
+    
+    # 保存标准输出
+    original_stdout = sys.stdout
+    
+    try:
+        # 打开日志文件
+        with open(log_file_path, 'w', encoding='utf-8') as log_file:
+            # 重定向标准输出到日志文件和控制台
+            class Tee(io.TextIOBase):
+                def __init__(self, file1, file2):
+                    self.file1 = file1
+                    self.file2 = file2
+                def write(self, data):
+                    self.file1.write(data)
+                    self.file2.write(data)
+                    return len(data)
+                def flush(self):
+                    self.file1.flush()
+                    self.file2.flush()
+            
+            # 重定向标准输出
+            sys.stdout = Tee(log_file, original_stdout)
+            
+            print(f"日志开始记录于: {current_time}")
+            print(f"日志文件路径: {log_file_path}")
+            
+            # 解析命令行参数
+            parser = argparse.ArgumentParser()
+            parser.add_argument("--model_list", nargs="*", default=["gpt-3.5-turbo"])
+            parser.add_argument("--chat_file", type=str, default="data/harmful_output/attack_gpt3.5_1106.json")
+            parser.add_argument("--port_start", type=int, default=9005)
+            parser.add_argument("--host_name", nargs="*", default=["127.0.0.1"])
+            parser.add_argument("--num_of_instance", type=int, default=1)
+            parser.add_argument("--output_suffix", type=str, default="")
+            parser.add_argument("--frequency_penalty", type=float, default=0.0)
+            parser.add_argument("--presence_penalty", type=float, default=0.0)
+            parser.add_argument("--temperature", type=float, default=0.7)
+            parser.add_argument("--eval_harm", action="store_true")
+            parser.add_argument("--eval_safe", action="store_true")
+            args = parser.parse_args()
+            
+            print(f"命令行参数: {args}")
+            
+            if args.model_list[0].startswith("gpt"):
+                eval_with_openai(model_list=args.model_list, output_suffix=args.output_suffix, ignore_existing=True,
+                                 temperature=args.temperature, chat_file=args.chat_file, eval_safe=args.eval_safe,
+                                 eval_harm=args.eval_harm, presence_penalty=args.presence_penalty)
+            else:
+                port_range = (args.port_start, args.port_start + args.num_of_instance - 1)
+                eval_with_open_llms(model_list=args.model_list, port_range=port_range, ignore_existing=True,
+                                    output_suffix=args.output_suffix, host_name=args.host_name,
+                                    frequency_penalty=args.frequency_penalty, temperature=args.temperature,
+                                    chat_file=args.chat_file, eval_safe=args.eval_safe, eval_harm=args.eval_harm,
+                                    presence_penalty=args.presence_penalty)
+            
+            print(f"日志记录结束于: {datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            
+    finally:
+        # 恢复标准输出
+        sys.stdout = original_stdout
+        print(f"日志已保存到: {log_file_path}")
 
-    if args.model_list[0].startswith("gpt"):
-        eval_with_openai(model_list=args.model_list, output_suffix=args.output_suffix, ignore_existing=True,
-                         temperature=args.temperature, chat_file=args.chat_file, eval_safe=args.eval_safe,
-                         eval_harm=args.eval_harm, presence_penalty=args.presence_penalty)
-    else:
-        port_range = (args.port_start, args.port_start + args.num_of_instance - 1)
-        eval_with_open_llms(model_list=args.model_list, port_range=port_range, ignore_existing=True,
-                            output_suffix=args.output_suffix, host_name=args.host_name,
-                            frequency_penalty=args.frequency_penalty, temperature=args.temperature,
-                            chat_file=args.chat_file, eval_safe=args.eval_safe, eval_harm=args.eval_harm,
-                            presence_penalty=args.presence_penalty)
+
+if __name__ == '__main__':
+    main()

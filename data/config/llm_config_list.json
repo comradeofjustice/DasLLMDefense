@@ -1,13 +1,12 @@
 [
+  
   {
-    "api_key": "sk-1234567890abcdef",
-    "base_url": "",
-    "model": "gpt-35-turbo",
-    "api_type": "azure",
-    "api_version": "2023-05-15"
+    "api_key":"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",
+    "model": "gpt-3.5-turbo",
+    "api_type": "openai"
   },
   {
-    "api_key": "sk-1234567890abcdef",
+    "api_key":"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",
     "model": "gpt-4-1106-preview",
     "api_type": "openai"
   }
