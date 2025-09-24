@@ -1,12 +1,12 @@
 [
   
   {
-    "api_key":"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",
+    "api_key":"",
     "model": "gpt-3.5-turbo",
     "api_type": "openai"
   },
   {
-    "api_key":"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",
+    "api_key":"",
     "model": "gpt-4-1106-preview",
     "api_type": "openai"
   }
