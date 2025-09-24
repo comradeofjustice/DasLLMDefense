@@ -2,13 +2,20 @@ import openai
 from autogen import OpenAIWrapper
 import json
 from tqdm import tqdm
+import sys
+import os
+# 将项目根目录添加到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from defense.utility import load_llm_config, load_attack_template, load_harmful_prompt
 from joblib import Parallel, delayed
+# Set proxy environment variables for network access
+os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7890'
+os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7890'
 
 
 def attack_llm_collect_response(template, prompts, llm_config_list, model=None):
     llm = OpenAIWrapper(config_list=llm_config_list)
-    llm_backup = OpenAIWrapper(config_list=load_llm_config(model_name="gpt-3.5-turbo-1106",
+    llm_backup = OpenAIWrapper(config_list=load_llm_config(model_name="gpt-3.5-turbo",
                                                            cache_seed=llm_config_list[0]["cache_seed"],
                                                            temperature=1.0))
     outputs = []
@@ -28,13 +35,16 @@ def attack_llm_collect_response(template, prompts, llm_config_list, model=None):
     return outputs, non_success_cnt
 
 
-def attack(output_prefix="attack", model_name="gpt-3.5-turbo-1106", output_suffix="", cache_seed=123,
+def attack(output_prefix="attack", model_name="gpt-3.5-turbo", output_suffix="", cache_seed=123,
            port_range=(9005, 9005), host_name="127.0.0.1", template=None, prompts=None):
     llm_config_list = load_llm_config(model_name=model_name, cache_seed=cache_seed, temperature=1.0,
                                       port_range=port_range, host_name=host_name, presence_penalty=0.0,
                                       frequency_penalty=0.0)
     outputs, non_success_cnt = attack_llm_collect_response(template, prompts, llm_config_list)
-    with open(f"data/harmful_output/{model_name}/{output_prefix}_{output_suffix}.json", "w") as f:
+    # 自动创建输出目录
+    output_dir = f"data/harmful_output/{model_name}"
+    os.makedirs(output_dir, exist_ok=True)
+    with open(f"{output_dir}/{output_prefix}_{output_suffix}.json", "w") as f:
         json.dump(outputs, f, indent=4, ensure_ascii=False)
     print("non_success_cnt:", non_success_cnt,
           "total:", len(prompts),
@@ -42,7 +52,7 @@ def attack(output_prefix="attack", model_name="gpt-3.5-turbo-1106", output_suffi
 
 
 if __name__ == '__main__':
-    model_name = "gpt-35-turbo-1106"
+    model_name = "gpt-3.5-turbo"
     port_range = (9005, 9005 + 1)
     host_name = "dgxh-1"
 

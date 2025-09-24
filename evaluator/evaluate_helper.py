@@ -1,6 +1,7 @@
 import json
 import os
 from glob import glob
+from unittest import result
 
 import openai
 import pandas as pd
@@ -54,14 +55,14 @@ def evaluate_explicit_detector(detector, log_file, attack_output_file="data/harm
             "results": results})
 
         print("Statistics:", statistics_list[-1]["statistics"])
-
+        print("results:",results)
     with open(log_file, "w") as f:
         json.dump(statistics_list, f, indent=4, ensure_ascii=False)
 
 
 def evaluate_defense_with_response(task_agency, defense_agency, defense_output_name,
-                                   chat_file="data/harmful_output/attack_gpt3.5_1106.json",
-                                   model_name="gpt-35-turbo", port_range=(9005, 9005), parallel=False,
+                                   chat_file="/data/CSY/autodefense/AutoDefense/data/harmful_output/gpt-3.5-turbo/attack-dan_0.json",
+                                   model_name="gpt-3.5-turbo", port_range=(9005, 9007), parallel=False,
                                    host_name="127.0.0.1", num_of_repetition=5, frequency_penalty=1.3,
                                    num_of_threads=6, temperature=0.7, cache_seed=123, presence_penalty=0.0):
     harmful_response = []
@@ -86,7 +87,7 @@ def evaluate_defense_with_response(task_agency, defense_agency, defense_output_n
                                      and i["name"] not in ("unicorn", "favorite_movie")]
 
     if parallel:
-        @retry(openai.RateLimitError, tries=20, delay=10, backoff=20)
+        @retry(openai.RateLimitError, tries=20, delay=50, backoff=20)
         def f(k, v, cache_seed, frequency_penalty=0.0, presence_penalty=0.0):
             llm_config = load_llm_config(model_name=model_name, port_range=port_range,
                                          host_name=host_name, cache_seed=cache_seed,
@@ -119,7 +120,7 @@ def evaluate_defense_with_response(task_agency, defense_agency, defense_output_n
         json.dump(defense_output, f, indent=4, ensure_ascii=False)
 
 
-def evaluate_defense_with_output_list(task_agency, defense_agency, output_list, model_name="gpt-35-turbo"):
+def evaluate_defense_with_output_list(task_agency, defense_agency, output_list, model_name="gpt-3.5-turbo"):
     llm_config = load_llm_config(model_name=model_name)
     defense = defense_agency(task_agency=task_agency(),
                              config_list=llm_config)
