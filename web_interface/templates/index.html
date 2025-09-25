@@ -118,20 +118,19 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch-tab-pane" type="button" role="tab" aria-controls="batch-tab-pane" aria-selected="false">
-                    <i class="fa fa-files-o mr-2"></i>批量响应防御
+                    <i class="fa fa-list mr-2"></i>批量响应防御
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-tab-pane" type="button" role="tab" aria-controls="logs-tab-pane" aria-selected="false">
-                    <i class="fa fa-history mr-2"></i>推理日志
+                    <i class="fa fa-file-text mr-2"></i>推理日志
                 </button>
             </li>
         </ul>
 
-        <!-- 标签内容 -->
         <div class="tab-content" id="defenseTabsContent">
             <!-- 单条响应防御 -->
-            <div class="tab-pane fade show active" id="response-tab-pane" role="tabpanel" aria-labelledby="response-tab">
+            <div class="tab-pane fade show active" id="response-tab-pane" role="tabpanel" aria-labelledby="response-tab" tabindex="0">
                 <h2 class="mb-4">单条响应防御评估</h2>
                 <form id="responseForm" class="needs-validation" novalidate>
                     <div class="row g-3">
@@ -159,9 +158,9 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="responseText" class="form-label">输入响应内容</label>
-                        <textarea class="form-control" id="responseText" name="response_text" rows="5" required placeholder="请输入需要防御的响应内容..."></textarea>
-                        <div class="invalid-feedback">请输入响应内容</div>
+                        <label for="responseText" class="form-label">输入响应文本</label>
+                        <textarea class="form-control" id="responseText" name="response_text" rows="5" required placeholder="请输入需要防御的响应文本..."></textarea>
+                        <div class="invalid-feedback">请输入响应文本</div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="fa fa-check mr-2"></i>执行防御
@@ -184,7 +183,7 @@
             </div>
 
             <!-- 提示词防御 -->
-            <div class="tab-pane fade" id="prompt-tab-pane" role="tabpanel" aria-labelledby="prompt-tab">
+            <div class="tab-pane fade" id="prompt-tab-pane" role="tabpanel" aria-labelledby="prompt-tab" tabindex="0">
                 <h2 class="mb-4">提示词防御评估</h2>
                 <form id="promptForm" class="needs-validation" novalidate>
                     <div class="row g-3">
@@ -237,7 +236,7 @@
             </div>
 
             <!-- 批量响应防御 -->
-            <div class="tab-pane fade" id="batch-tab-pane" role="tabpanel" aria-labelledby="batch-tab">
+            <div class="tab-pane fade" id="batch-tab-pane" role="tabpanel" aria-labelledby="batch-tab" tabindex="0">
                 <h2 class="mb-4">批量响应防御评估</h2>
                 <form id="batchForm" class="needs-validation" enctype="multipart/form-data" novalidate>
                     <div class="row g-3">
@@ -291,7 +290,7 @@
             </div>
 
             <!-- 推理日志 -->
-            <div class="tab-pane fade" id="logs-tab-pane" role="tabpanel" aria-labelledby="logs-tab">
+            <div class="tab-pane fade" id="logs-tab-pane" role="tabpanel" aria-labelledby="logs-tab" tabindex="0">
                 <h2 class="mb-4">防御推理日志</h2>
                 <div class="mb-4">
                     <h3>最近的防御记录</h3>
@@ -350,6 +349,8 @@
                         if (response.status === 'success') {
                             // 显示防御结果
                             displayResponseResult(response.result);
+                            // 显示控制台输出
+                            displayConsoleOutput(response.stdout_content, response.stderr_content);
                             // 重新加载日志列表
                             loadLogList();
                             // 显示详细日志
@@ -397,6 +398,8 @@
                         if (response.status === 'success') {
                             // 显示防御结果
                             displayPromptResult(response.result);
+                            // 显示控制台输出
+                            displayConsoleOutput(response.stdout_content, response.stderr_content);
                             // 重新加载日志列表
                             loadLogList();
                             // 显示详细日志
@@ -444,6 +447,8 @@
                         if (response.status === 'success') {
                             // 显示防御结果
                             displayBatchResult(response.results);
+                            // 显示控制台输出
+                            displayConsoleOutput(response.stdout_content, response.stderr_content);
                             // 重新加载日志列表
                             loadLogList();
                             // 显示详细日志
@@ -544,6 +549,19 @@
                             logDetail.append(`<p><strong>防御策略:</strong> ${logData.strategy}</p>`);
                             logDetail.append(`<p><strong>使用模型:</strong> ${logData.model}</p>`);
                             logDetail.append(`<p><strong>执行时间:</strong> ${formatTimestamp(logData.timestamp)}</p>`);
+                            logDetail.append('<hr>');
+                            
+                            // 显示控制台输出
+                            if (logData.stdout_content) {
+                                logDetail.append(`<h5>控制台输出:</h5>`);
+                                logDetail.append(`<pre class="bg-light p-3">${escapeHtml(logData.stdout_content)}</pre>`);
+                            }
+                            
+                            if (logData.stderr_content) {
+                                logDetail.append(`<h5>其他输出:</h5>`);
+                                logDetail.append(`<pre class="bg-danger text-white p-3">${escapeHtml(logData.stderr_content)}</pre>`);
+                            }
+                            
                             logDetail.append('<hr>');
                             
                             // 根据日志类型显示不同的内容
@@ -674,6 +692,40 @@
                         resultContainer.append(`<p class="text-muted">... 还有 ${results.length - 5} 条结果未显示</p>`);
                     }
                 }
+            }
+
+            // 显示控制台输出
+            function displayConsoleOutput(stdout, stderr) {
+                // 在每个结果区域下方添加控制台输出显示
+                const resultContainers = [
+                    $('#responseResult'),
+                    $('#promptResult'),
+                    $('#batchResult')
+                ];
+                
+                resultContainers.forEach(function(container) {
+                    // 移除之前可能添加的控制台输出区域
+                    container.find('.console-output').remove();
+                    
+                    // 添加新的控制台输出区域
+                    if (stdout) {
+                        container.append(`
+                            <div class="console-output mt-4">
+                                <h5>控制台输出:</h5>
+                                <pre class="bg-light p-3">${escapeHtml(stdout)}</pre>
+                            </div>
+                        `);
+                    }
+                    
+                    if (stderr) {
+                        container.append(`
+                            <div class="console-output mt-4">
+                                <h5>错误输出:</h5>
+                                <pre class="bg-danger text-white p-3">${escapeHtml(stderr)}</pre>
+                            </div>
+                        `);
+                    }
+                });
             }
 
             // 工具函数：格式化时间戳
