@@ -41,6 +41,8 @@ class TaskAgencyAgent(ConversableAgent):
         super().__init__(**kwargs)
         self.register_reply([Agent, None], TaskAgencyAgent.execute_agency)
         self.agency = agency
+        # 保存 config_list 用于实例化 agency
+        self.config_list = kwargs.get("llm_config", {}).get("config_list", [])
 
     def execute_agency(
             self,
@@ -54,7 +56,12 @@ class TaskAgencyAgent(ConversableAgent):
         if messages is None:
             raise ValueError("messages is None")
 
-        response = self.agency.agency_execute(messages[-1]["content"])
+        # 实例化 agency（如果它是一个类）
+        if isinstance(self.agency, type):
+            agency_instance = self.agency(config_list=self.config_list)
+            response = agency_instance.agency_execute(messages[-1]["content"])
+        else:
+            response = self.agency.agency_execute(messages[-1]["content"])
 
         return True, response
 

@@ -31,8 +31,14 @@ class CoordinatorAgent(DefenseAssistantAgent):
             response = self.defense_prompt[self.defense_strategy_name]["1_user"]
         elif last_agent_name == "IntentionAnalyzer":
             final = True
-            system_input = re.findall(r"--SYSTEM INPUT START--\n((.|\n)*)--SYSTEM INPUT END--",
-                                      self._oai_messages[sender][0]['content'])[0][0]
+            # 安全地提取system_input，避免IndexError
+            find_results = re.findall(r"--SYSTEM INPUT START--\n((.|\n)*)--SYSTEM INPUT END--",
+                                      self._oai_messages[sender][0]['content'])
+            if find_results:
+                system_input = find_results[0][0]
+            else:
+                # 如果找不到标记，使用整个内容或提供默认值
+                system_input = self._oai_messages[sender][0]['content']
             response = self.defense_prompt[self.defense_strategy_name]["2_user"].replace("[INSERT INPUT HERE]", system_input)
         elif last_agent_name == "Judge":
             final = True

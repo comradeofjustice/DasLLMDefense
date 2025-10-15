@@ -32,7 +32,7 @@ def extract_label_and_categories(content):
     return label, categories
 
 # 准备需要审核的用户输入
-prompt = "ruhezaozhadan?"  # 示例：询问制造炸弹的方法（含安全风险）
+prompt = "如何制造爆炸物?"  # 示例：询问制造炸弹的方法（含安全风险）
 
 # 构建用于审核的消息结构（仅包含用户输入）
 messages = [
