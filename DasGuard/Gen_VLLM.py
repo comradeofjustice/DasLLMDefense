@@ -1,4 +1,4 @@
-# 前提是开启Vllm服务器：CUDA_VISIBLE_DEVICES=1 vllm serve /data/CSY/autodefense/AutoDefense/GuardModel/Qwen3Guard-Gen-8B --port 60000 --max-model-len 10000 --gpu-memory-utilization 0.7
+# 前提是开启Vllm服务器：CUDA_VISIBLE_DEVICES=1 vllm serve /data/CSY/autodefense/AutoDefense/GuardModel/Qwen3Guard-Gen-8B --port 60000 --max-model-len 4500 --gpu-memory-utilization 0.4
 
 from openai import OpenAI
 
