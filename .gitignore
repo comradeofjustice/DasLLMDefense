@@ -8,4 +8,4 @@ __pycache__
 .run
 llama_models
 GuardModel
-translator
+translator/
