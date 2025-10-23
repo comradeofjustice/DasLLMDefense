@@ -9,3 +9,4 @@ __pycache__
 llama_models
 GuardModel
 translator/
+translator/pytorch_model.bin
